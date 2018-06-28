@@ -1,14 +1,60 @@
-﻿using System.Text;
+﻿// *************************************************************************** 
+// This is free and unencumbered software released into the public domain.
+// 
+// Anyone is free to copy, modify, publish, use, compile, sell, or
+// distribute this software, either in source code form or as a compiled
+// binary, for any purpose, commercial or non-commercial, and by any
+// means.
+// 
+// In jurisdictions that recognize copyright laws, the author or authors
+// of this software dedicate any and all copyright interest in the
+// software to the public domain. We make this dedication for the benefit
+// of the public at large and to the detriment of our heirs and
+// successors. We intend this dedication to be an overt act of
+// relinquishment in perpetuity of all present and future rights to this
+// software under copyright law.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+// IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+// OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+// OTHER DEALINGS IN THE SOFTWARE.
+// 
+// For more information, please refer to <http://unlicense.org>
+// ***************************************************************************
+
+using System;
+using System.Text;
 using InputStateManager;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGameDemoTools;
+using StateMachine;
 
 namespace MonoGame_DXGraphicCardTester
 {
+	public enum State
+	{
+		RESOLUTION_800_X600,
+		RESOLUTION_1024_X768,
+		RESOLUTION_1280_X768,
+		RESOLUTION_1920_X1080,
+		RESOLUTION_800_X600_FULLSCREEN,
+		RESOLUTION_1024_X768_FULLSCREEN,
+		RESOLUTION_1280_X768_FULLSCREEN,
+		RESOLUTION_1920_X1080_FULLSCREEN
+	}
+
+	public enum Trigger
+	{
+		SPACE
+	}
+
 	/// <summary>
-	/// This is the main type for your game.
+	///     This is the main type for your game.
 	/// </summary>
 	public class Game1 : Game
 	{
@@ -17,6 +63,7 @@ namespace MonoGame_DXGraphicCardTester
 			"Source: https://www.flickr.com/photos/78207463@N04/8226826999/ \n'Inside St Kentigerns RC Church.'\n" +
 			"Located in Blackpool, Lancashire, England, UK.";
 
+		private readonly GraphicsDeviceManager graphics;
 		private SpriteBatch spriteBatch;
 		private InputManager Input { get; } = new InputManager();
 
@@ -24,13 +71,17 @@ namespace MonoGame_DXGraphicCardTester
 		private Texture2D Image { get; set; }
 		private Point Resolution { get; } = new Point(1280, 720);
 
+		private readonly Fsm<State, Trigger> fsm;
+		private int counter;
+
 		public Game1()
 		{
-			var graphics = new GraphicsDeviceManager(this);
+			graphics = new GraphicsDeviceManager(this);
 			graphics.PreferMultiSampling = true;
 			graphics.PreferredBackBufferWidth = Resolution.X;
 			graphics.PreferredBackBufferHeight = Resolution.Y;
 			graphics.IsFullScreen = false;
+			graphics.HardwareModeSwitch = false;
 			graphics.PreparingDeviceSettings += PrepareDeviceSettings;
 			graphics.SynchronizeWithVerticalRetrace = true;
 
@@ -39,6 +90,8 @@ namespace MonoGame_DXGraphicCardTester
 
 			Content.RootDirectory = "Content";
 			Debug.Log("Program started.");
+
+			fsm = CreateFiniteStateMachine();
 		}
 
 		void PrepareDeviceSettings(object sender, PreparingDeviceSettingsEventArgs e)
@@ -46,9 +99,55 @@ namespace MonoGame_DXGraphicCardTester
 			e.GraphicsDeviceInformation.GraphicsProfile = GraphicsProfile.Reach;
 		}
 
+		private void SetResolution(int width, int height, bool isFullscreen)
+		{
+			try
+			{
+				graphics.PreferredBackBufferWidth = width;
+				graphics.PreferredBackBufferHeight = height;
+				graphics.IsFullScreen = isFullscreen;
+				graphics.ApplyChanges();
+				LogResolutionChange();
+				counter++;
+			}
+			catch (Exception e)
+			{
+				Debug.Log("Exception thrown!", e);
+			}
+		}
+
+		private Fsm<State, Trigger> CreateFiniteStateMachine()
+		{
+			return Fsm<State, Trigger>.Builder(State.RESOLUTION_800_X600)
+				.State(State.RESOLUTION_800_X600)
+				.OnEnter(args => { SetResolution(800, 600, false); })
+				.TransitionTo(State.RESOLUTION_800_X600_FULLSCREEN).On(Trigger.SPACE)
+				.State(State.RESOLUTION_800_X600_FULLSCREEN)
+				.OnEnter(args => { SetResolution(800, 600, true); })
+				.TransitionTo(State.RESOLUTION_1024_X768).On(Trigger.SPACE).State(State.RESOLUTION_1024_X768).OnEnter(
+					args => { SetResolution(1024, 768, false); })
+				.TransitionTo(State.RESOLUTION_1024_X768_FULLSCREEN).On(Trigger.SPACE)
+				.State(State.RESOLUTION_1024_X768_FULLSCREEN)
+				.OnEnter(args => { SetResolution(1024, 768, true); })
+				.TransitionTo(State.RESOLUTION_1280_X768).On(Trigger.SPACE).State(State.RESOLUTION_1280_X768).OnEnter(
+					args => { SetResolution(1280, 768, false); })
+				.TransitionTo(State.RESOLUTION_1280_X768_FULLSCREEN).On(Trigger.SPACE)
+				.State(State.RESOLUTION_1280_X768_FULLSCREEN).OnEnter(args => { SetResolution(1280, 768, true); })
+				.TransitionTo(State.RESOLUTION_1920_X1080).On(Trigger.SPACE).State(State.RESOLUTION_1920_X1080).OnEnter(
+					args => { SetResolution(1920, 1080, false); })
+				.TransitionTo(State.RESOLUTION_1920_X1080_FULLSCREEN).On(Trigger.SPACE)
+				.State(State.RESOLUTION_1920_X1080_FULLSCREEN).OnEnter(args => { SetResolution(1920, 1080, true); })
+				.Build();
+		}
+
+		private void LogResolutionChange()
+		{
+			Debug.Log($"current resolution: {fsm.Current.Identifier}");
+		}
+
 		/// <summary>
-		/// LoadContent will be called once per game and is the place to load
-		/// all of your content.
+		///     LoadContent will be called once per game and is the place to load
+		///     all of your content.
 		/// </summary>
 		protected override void LoadContent()
 		{
@@ -59,8 +158,8 @@ namespace MonoGame_DXGraphicCardTester
 		}
 
 		/// <summary>
-		/// Allows the game to run logic such as updating the world,
-		/// checking for collisions, gathering input, and playing audio.
+		///     Allows the game to run logic such as updating the world,
+		///     checking for collisions, gathering input, and playing audio.
 		/// </summary>
 		/// <param name="gameTime">Provides a snapshot of timing values.</param>
 		protected override void Update(GameTime gameTime)
@@ -80,12 +179,12 @@ namespace MonoGame_DXGraphicCardTester
 		{
 			if (Input.Key.Is.Press(Keys.Space))
 			{
-
+				fsm.Trigger(Trigger.SPACE);
 			}
 		}
 
 		/// <summary>
-		/// This is called when the game should draw itself.
+		///     This is called when the game should draw itself.
 		/// </summary>
 		/// <param name="gameTime">Provides a snapshot of timing values.</param>
 		protected override void Draw(GameTime gameTime)
@@ -117,12 +216,13 @@ namespace MonoGame_DXGraphicCardTester
 		private string BuildText()
 		{
 			var sb = new StringBuilder();
-			sb.Append($"This will test your display-adapter.\n");
-			sb.Append($"A report named 'report.txt' will be generated right next to the executable of this program.\n\n\n");
-			sb.Append($"Press <SPACE> to switch to next resolution!\n\n");
-			sb.Append($"  TEST 1/12\n");
-			sb.Append($"    current resolution: 800x600 fullscreen\n");
-			sb.Append($"       next resolution: 800x600 fullscreen\n");
+			sb.Append("This will test your display-adapter.\n");
+			sb.Append(
+				"A report named 'report.txt' will be generated right next to the executable of this program.\n\n\n");
+			sb.Append("Press <SPACE> to switch to next resolution!\n\n");
+			sb.Append($"  TEST {counter + 1}\n");
+			sb.Append($"    current resolution: {fsm.Current.Identifier}\n");
+			if (counter == 7) sb.Append("\nYOU'RE DONE! Now close this program and get your 'report.txt' file.\n");
 			sb.Append("\n\n\nPress <ESC> to exit!");
 			return sb.ToString();
 		}
