@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2035
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoGame-DXGraphicCardTester", "MonoGame-DXGraphicCardTester/MonoGame-DXGraphicCardTester.csproj", "{A2FB3B5F-FF51-48C0-A986-E864C9A33B07}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A2FB3B5F-FF51-48C0-A986-E864C9A33B07}.Debug|x86.ActiveCfg = Debug|x86
+		{A2FB3B5F-FF51-48C0-A986-E864C9A33B07}.Debug|x86.Build.0 = Debug|x86
+		{A2FB3B5F-FF51-48C0-A986-E864C9A33B07}.Release|x86.ActiveCfg = Release|x86
+		{A2FB3B5F-FF51-48C0-A986-E864C9A33B07}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FF5C659E-FE50-4063-87E0-6670ED0C9C63}
+	EndGlobalSection
+EndGlobal
