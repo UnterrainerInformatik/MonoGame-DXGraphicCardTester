@@ -69,17 +69,18 @@ namespace MonoGame_DXGraphicCardTester
 
 		private SpriteFont Font { get; set; }
 		private Texture2D Image { get; set; }
-		private Point Resolution { get; } = new Point(1280, 720);
 
 		private readonly Fsm<State, Trigger> fsm;
 		private int counter;
+		private RenderTarget2D rt;
+		private Point targetResolution;
 
 		public Game1()
 		{
 			graphics = new GraphicsDeviceManager(this);
 			graphics.PreferMultiSampling = true;
-			graphics.PreferredBackBufferWidth = Resolution.X;
-			graphics.PreferredBackBufferHeight = Resolution.Y;
+			graphics.PreferredBackBufferWidth = 800;
+			graphics.PreferredBackBufferHeight = 600;
 			graphics.IsFullScreen = false;
 			graphics.HardwareModeSwitch = false;
 			graphics.PreparingDeviceSettings += PrepareDeviceSettings;
@@ -94,19 +95,27 @@ namespace MonoGame_DXGraphicCardTester
 			fsm = CreateFiniteStateMachine();
 		}
 
-		void PrepareDeviceSettings(object sender, PreparingDeviceSettingsEventArgs e)
+		private void PrepareDeviceSettings(object sender, PreparingDeviceSettingsEventArgs e)
 		{
 			e.GraphicsDeviceInformation.GraphicsProfile = GraphicsProfile.Reach;
 		}
 
+		protected override void Initialize()
+		{
+			base.Initialize();
+			SetResolution(800, 600, false);
+		}
+
 		private void SetResolution(int width, int height, bool isFullscreen)
 		{
+			rt = new RenderTarget2D(GraphicsDevice, width, height);
+			if (isFullscreen)
+				targetResolution = new Point(GraphicsDevice.DisplayMode.Width, GraphicsDevice.DisplayMode.Height);
+			else
+				targetResolution = new Point(width, height);
 			try
 			{
-				graphics.PreferredBackBufferWidth = width;
-				graphics.PreferredBackBufferHeight = height;
-				graphics.IsFullScreen = isFullscreen;
-				graphics.ApplyChanges();
+				Util.InitGraphicsMode(this, graphics, width, height, isFullscreen, 1000f / 60f, true, false, false);
 				LogResolutionChange();
 				counter++;
 			}
@@ -190,15 +199,19 @@ namespace MonoGame_DXGraphicCardTester
 		protected override void Draw(GameTime gameTime)
 		{
 			GraphicsDevice.Clear(Color.CornflowerBlue);
+			GraphicsDevice.SetRenderTarget(rt);
+			GraphicsDevice.Clear(Color.CornflowerBlue);
 			DrawImage();
 			DrawText(gameTime);
 			base.Draw(gameTime);
+
+			FinalDraw();
 		}
 
 		private void DrawImage()
 		{
 			spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
-			spriteBatch.Draw(Image, new Rectangle(0, 0, Resolution.X, Resolution.Y), Color.White);
+			spriteBatch.Draw(Image, new Rectangle(0, 0, rt.Width, rt.Height), Color.White);
 			spriteBatch.End();
 		}
 
@@ -209,7 +222,15 @@ namespace MonoGame_DXGraphicCardTester
 			spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
 			spriteBatch.DrawString(Font, BuildText(), new Vector2(10, 10), c);
 			var s = Font.MeasureString(IMAGE_COPYRIGHT);
-			spriteBatch.DrawString(Font, IMAGE_COPYRIGHT, new Vector2(30f, Resolution.Y - s.Y - 30f), c);
+			spriteBatch.DrawString(Font, IMAGE_COPYRIGHT, new Vector2(30f, rt.Height - s.Y - 30f), c);
+			spriteBatch.End();
+		}
+
+		private void FinalDraw()
+		{
+			GraphicsDevice.SetRenderTarget(null);
+			spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+			spriteBatch.Draw(rt, new Rectangle(0, 0, targetResolution.X, targetResolution.Y), Color.White);
 			spriteBatch.End();
 		}
 
@@ -221,7 +242,7 @@ namespace MonoGame_DXGraphicCardTester
 				"A report named 'report.txt' will be generated right next to the executable of this program.\n\n\n");
 			sb.Append("Press <SPACE> to switch to next resolution!\n\n");
 			sb.Append($"  TEST {counter + 1}\n");
-			sb.Append($"    current resolution: {fsm.Current.Identifier}\n");
+			sb.Append($"    current resolution: {rt.Width} x {rt.Height}\n");
 			if (counter == 7) sb.Append("\nYOU'RE DONE! Now close this program and get your 'report.txt' file.\n");
 			sb.Append("\n\n\nPress <ESC> to exit!");
 			return sb.ToString();

@@ -26,7 +26,6 @@
 // ***************************************************************************
 
 using System;
-using System.IO;
 using System.Windows.Forms;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -76,54 +75,52 @@ namespace MonoGame_DXGraphicCardTester
 			SurfaceFormat preferredBackBufferFormat = SurfaceFormat.Color,
 			DepthFormat preferredDepthFormat = DepthFormat.None, Point? zero = null)
 		{
-			try
+			// Form.ActiveForm really gets the form of the currently active window. We want the game's window.
+			var f = (Form) Control.FromHandle(game.Window.Handle);
+			if (f == null)
+				return null;
+
+			graphicsDeviceManager.PreferredBackBufferFormat = preferredBackBufferFormat;
+			graphicsDeviceManager.PreferredDepthStencilFormat = preferredDepthFormat;
+			// This tells MonoGame to not switch the mode of the graphics-card directly, but to scale the window.
+			graphicsDeviceManager.HardwareModeSwitch = false;
+			// This tells MonoGame to fetch pre DX9c devices as well.
+			graphicsDeviceManager.GraphicsProfile = GraphicsProfile.Reach;
+			// Enables anti-aliasing.
+			graphicsDeviceManager.PreferMultiSampling = isPreferMultiSampling;
+			// Set to true to set the draw-restriction to the refresh-rate of the monitor.
+			graphicsDeviceManager.SynchronizeWithVerticalRetrace = isSynchronizeWithVerticalRetrace;
+			// If set to false, you are unbinding update and draw thus allowing them to be called separately.
+			game.IsFixedTimeStep = isFixedTimeStep;
+			// Determines how often update will be called (works only if IsFixedTimeStep is true.
+			// 60 times per second is the default value.
+			game.TargetElapsedTime = TimeSpan.FromMilliseconds(targetElapsedIntervalInMillis);
+
+			Screen screen;
+			if (zero.HasValue && isFullScreen)
 			{
-				// Form.ActiveForm really gets the form of the currently active window. We want the game's window.
-				var f = (Form) Control.FromHandle(game.Window.Handle);
-				if (f == null)
-					return null; 
+				screen = Screen.FromPoint(new System.Drawing.Point(zero.Value.X, zero.Value.Y));
+			}
+			else
+			{
+				screen = Screen.FromControl(f);
+				zero = new Point(screen.Bounds.X, screen.Bounds.Y);
+			}
 
-				graphicsDeviceManager.PreferredBackBufferFormat = preferredBackBufferFormat;
-				graphicsDeviceManager.PreferredDepthStencilFormat = preferredDepthFormat;
-				// This tells MonoGame to not switch the mode of the graphics-card directly, but to scale the window.
-				graphicsDeviceManager.HardwareModeSwitch = false;
-				// This tells MonoGame to fetch pre DX9c devices as well.
-				graphicsDeviceManager.GraphicsProfile = GraphicsProfile.Reach;
-				// Enables anti-aliasing.
-				graphicsDeviceManager.PreferMultiSampling = isPreferMultiSampling;
-				// Set to true to set the draw-restriction to the refresh-rate of the monitor.
-				graphicsDeviceManager.SynchronizeWithVerticalRetrace = isSynchronizeWithVerticalRetrace;
-				// If set to false, you are unbinding update and draw thus allowing them to be called separately.
-				game.IsFixedTimeStep = isFixedTimeStep;
-				// Determines how often update will be called (works only if IsFixedTimeStep is true.
-				// 60 times per second is the default value.
-				game.TargetElapsedTime = TimeSpan.FromMilliseconds(targetElapsedIntervalInMillis);
+			var x = screen.Bounds.Width;
+			var y = screen.Bounds.Height;
 
-				Screen screen;
-				if (zero.HasValue && isFullScreen)
-				{
-					screen = Screen.FromPoint(new System.Drawing.Point(zero.Value.X, zero.Value.Y));
-				}
-				else
-				{
-					screen = Screen.FromControl(f);
-					zero = new Point(screen.Bounds.X, screen.Bounds.Y);
-				}
+			width = Math.Min(width, x);
+			height = Math.Min(height, y);
 
-				var x = screen.Bounds.Width;
-				var y = screen.Bounds.Height;
+			if (!isFullScreen)
+			{
+				x = width + 16;
+				y = height + 38;
+				zero = zero + new Point((screen.Bounds.Width - width) / 2, (screen.Bounds.Height - height) / 2);
+			}
 
-				width = Math.Min(width, x);
-				height = Math.Min(height, y);
-
-				if (!isFullScreen)
-				{
-					x = width + 16;
-					y = height + 38;
-					zero = zero + new Point((screen.Bounds.Width - width) / 2, (screen.Bounds.Height - height) / 2);
-				}
-
-				game.Window.IsBorderless = isFullScreen;
+			game.Window.IsBorderless = isFullScreen;
 
 #if LINUX
 		Debug.DLog("getting form...");
@@ -138,21 +135,16 @@ namespace MonoGame_DXGraphicCardTester
 			Debug.DLog("form was null.");
 		}
 #else
-				game.Window.Position = zero.Value;
+			game.Window.Position = zero.Value;
 #endif
 
-				graphicsDeviceManager.PreferredBackBufferWidth = width;
-				graphicsDeviceManager.PreferredBackBufferHeight = height;
-				graphicsDeviceManager.IsFullScreen = isFullScreen;
-				graphicsDeviceManager.ApplyChanges();
+			graphicsDeviceManager.PreferredBackBufferWidth = width;
+			graphicsDeviceManager.PreferredBackBufferHeight = height;
+			graphicsDeviceManager.IsFullScreen = isFullScreen;
+			graphicsDeviceManager.ApplyChanges();
 
-				f.SetDesktopBounds(zero.Value.X, zero.Value.Y, x, y);
-				return new Rectangle(zero.Value.X, zero.Value.Y, width, height);
-			}
-			catch (Exception)
-			{
-				return null;
-			}
+			f.SetDesktopBounds(zero.Value.X, zero.Value.Y, x, y);
+			return new Rectangle(zero.Value.X, zero.Value.Y, width, height);
 		}
 	}
 }
