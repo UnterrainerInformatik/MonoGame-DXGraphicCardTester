@@ -241,7 +241,7 @@ namespace MonoGame_DXGraphicCardTester
 			sb.Append(
 				"A report named 'report.txt' will be generated right next to the executable of this program.\n\n\n");
 			sb.Append("Press <SPACE> to switch to next resolution!\n\n");
-			sb.Append($"  TEST {counter + 1}\n");
+			sb.Append($"  TEST {counter}\n");
 			sb.Append($"    current resolution: {rt.Width} x {rt.Height}\n");
 			if (counter == 7) sb.Append("\nYOU'RE DONE! Now close this program and get your 'report.txt' file.\n");
 			sb.Append("\n\n\nPress <ESC> to exit!");
